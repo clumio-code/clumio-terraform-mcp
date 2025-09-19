@@ -1,0 +1,22 @@
+resource "clumio_protection_group" "{{ group_name }}" {
+  {%- if clumio_provider_alias %}
+  provider       = clumio.{{ clumio_provider_alias }}
+  {%- endif %}
+  name           = "{{ display_name }}"
+  description    = "{{ description }}"
+  bucket_rule    = jsonencode(
+    {{ bucket_rule | tojson(indent=2) | indent(4) }}
+  )
+  object_filter {
+    storage_classes = {{ storage_classes | tojson }}
+  }
+}
+
+resource "clumio_policy_assignment" "{{ group_name }}_assignment" {
+  {%- if clumio_provider_alias %}
+  provider    = clumio.{{ clumio_provider_alias }}
+  {%- endif %}
+  entity_id   = clumio_protection_group.{{ group_name }}.id
+  entity_type = "protection_group"
+  policy_id   = clumio_policy.{{ policy_name }}.id
+}

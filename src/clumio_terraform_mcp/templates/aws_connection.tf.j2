@@ -1,0 +1,52 @@
+{%- if aws_provider_alias %}
+data "aws_caller_identity" "{{ aws_provider_alias }}" {
+  provider = aws.{{ aws_provider_alias }}
+}
+
+data "aws_region" "{{ aws_provider_alias }}" {
+  provider = aws.{{ aws_provider_alias }}
+}
+{%- else %}
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+{%- endif %}
+
+resource "clumio_aws_connection" "{{ connection_name }}" {
+  {%- if clumio_provider_alias %}
+  provider          = clumio.{{ clumio_provider_alias }}
+  {%- endif %}
+  account_native_id = data.aws_caller_identity.{{ aws_provider_alias if aws_provider_alias else 'current' }}.account_id
+  aws_region        = data.aws_region.{{ aws_provider_alias if aws_provider_alias else 'current' }}.region
+  description       = "{{ description }}"
+}
+
+module "clumio_aws_resources{{ '_' + aws_provider_alias if aws_provider_alias }}" {
+  providers = {
+    aws    = aws{{ '.' + aws_provider_alias if aws_provider_alias }}
+    clumio = clumio{{ '.' + clumio_provider_alias if clumio_provider_alias }}
+  }
+  source                = "clumio-code/aws-template/clumio"
+  clumio_token          = clumio_aws_connection.{{ connection_name }}.token
+  role_external_id      = clumio_aws_connection.{{ connection_name }}.role_external_id
+  aws_region            = clumio_aws_connection.{{ connection_name }}.aws_region
+  aws_account_id        = clumio_aws_connection.{{ connection_name }}.account_native_id
+  clumio_aws_account_id = clumio_aws_connection.{{ connection_name }}.clumio_aws_account_id
+
+  # Service enablement flags
+  is_ebs_enabled        = {{ services.get('ebs', 'false') | lower }}
+  is_rds_enabled        = {{ services.get('rds', 'false') | lower }}
+  is_s3_enabled         = {{ services.get('s3', 'false') | lower }}
+  is_dynamodb_enabled   = {{ services.get('dynamodb', 'false') | lower }}
+
+  {%- if wait_for_data_plane_resources or wait_for_ingestion %}
+
+  # Wait flags
+  {%- if wait_for_data_plane_resources %}
+  wait_for_data_plane_resources = {{ wait_for_data_plane_resources | lower }}
+  {%- endif %}
+  {%- if wait_for_ingestion %}
+  wait_for_ingestion            = {{ wait_for_ingestion | lower }}
+  {%- endif %}
+  {%- endif %}
+}

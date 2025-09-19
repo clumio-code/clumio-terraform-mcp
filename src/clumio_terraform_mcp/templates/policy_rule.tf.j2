@@ -1,0 +1,15 @@
+resource "clumio_policy_rule" "{{ rule_name }}" {
+  {%- if clumio_provider_alias %}
+  provider            = clumio.{{ clumio_provider_alias }}
+  {%- endif %}
+  policy_id           = clumio_policy.{{ policy_name }}.id
+  name                = "{{ display_name }}"
+  {%- if before_rule_name %}
+  before_rule_id      = clumio_policy_rule.{{ before_rule_name }}.id
+  {%- else %}
+  before_rule_id      = ""
+  {%- endif %}
+  condition = jsonencode(
+    {{ condition_expression | tojson(indent=2) | indent(4) }}
+  )
+}

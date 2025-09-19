@@ -1,0 +1,63 @@
+terraform {
+  required_providers {
+    clumio = {
+      source  = "clumio-code/clumio"
+    }
+    aws = {}
+  }
+}
+{% for clumio_account in clumio_accounts %}
+provider "clumio" {
+  clumio_api_token    = var.clumio_api_token{{'_' ~ clumio_account.alias if clumio_account.alias }}
+  clumio_api_base_url = var.clumio_api_base_url{{'_' ~ clumio_account.alias if clumio_account.alias }}
+  {%- if clumio_account.ou_name %}
+  clumio_organizational_unit_context = clumio_organizational_unit.{{ clumio_account.ou_name }}.id
+  {%- endif %}
+  {%- if clumio_account.alias %}
+  alias = "{{ clumio_account.alias }}"
+  {%- endif %}
+}
+{% endfor %}
+{%- if aws_accounts is defined and aws_accounts | length > 0 %}
+{%- for account in aws_accounts %}
+provider "aws" {
+  {%- if account.alias %}
+  alias  = "{{ account.alias }}"
+  {%- endif %}
+  region = "{{ account.region | default('${var.aws_region}') }}"
+  {%- if account.profile %}
+  profile = "{{ account.profile }}"
+  {%- endif %}
+  {%- if account.assume_role %}
+  assume_role {
+    role_arn     = "{{ account.assume_role.role_arn }}"
+    session_name = "{{ account.assume_role.session_name | default('clumio-session') }}"
+    {%- if account.assume_role.external_id %}
+    external_id  = "{{ account.assume_role.external_id }}"
+    {%- endif %}
+  }
+  {%- endif %}
+}
+{% endfor %}
+{%- else %}
+provider "aws" {
+  region = var.aws_region
+}
+{% endif %}
+{%- for clumio_account in clumio_accounts %}
+variable "clumio_api_token{{ '_' ~ clumio_account.alias if clumio_account.alias }}" {
+  description = "Clumio API Token"
+  type        = string
+  sensitive   = true
+}
+
+variable "clumio_api_base_url{{ '_' ~ clumio_account.alias if clumio_account.alias }}" {
+  description = "Clumio API Base URL"
+  type        = string
+}
+{% endfor %}
+variable "aws_region" {
+  description = "AWS Region"
+  type        = string
+  default     = "us-west-2"
+}

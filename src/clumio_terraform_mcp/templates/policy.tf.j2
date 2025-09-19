@@ -1,0 +1,56 @@
+resource "clumio_policy" "{{ policy_name }}" {
+  {%- if clumio_provider_alias %}
+  provider          = clumio.{{ clumio_provider_alias }}
+  {%- endif %}
+  name              = "{{ display_name }}"
+  activation_status = "activated"
+  
+  {%- for operation in operations %}
+  operations {
+    action_setting = "{{ operation.action_setting }}"
+    type           = "{{ operation.type }}"
+    {%- for sla in operation.slas %}
+    slas {
+      retention_duration {
+        unit  = "{{ sla.retention_duration.unit }}"
+        value = {{ sla.retention_duration.value }}
+      }
+      rpo_frequency {
+        unit  = "{{ sla.rpo_frequency.unit }}"
+        value = {{ sla.rpo_frequency.value }}
+      }
+    }
+    {%- endfor %}
+    {%- if operation.advanced_settings %}
+    advanced_settings {
+      {%- set adv_settings = operation.advanced_settings.generate_advanced_settings() %}
+      {%- for setting_type, setting_values in adv_settings.items() %}
+      {{ setting_type }} {
+        {%- for key, value in setting_values.items() %}
+        {%- if value is string %}
+        {{ key }} = "{{ value }}"
+        {%- else %}
+        {{ key }} = {{ value | lower }}
+        {%- endif %}
+        {%- endfor %}
+      }
+      {%- endfor %}
+    }
+    {%- endif %}
+    {%- if operation.backup_aws_region %}
+    backup_aws_region = "{{ operation.backup_aws_region }}"
+    {%- endif %}
+    {%- if operation.backup_window_tz %}
+    backup_window_tz {
+      {%- if operation.backup_window_tz.end_time %}
+      end_time = "{{ operation.backup_window_tz.end_time }}"
+      {%- endif %}
+      start_time = "{{ operation.backup_window_tz.start_time }}"
+    }
+    {%- endif %}
+    {%- if operation.timezone %}
+    timezone = "{{ operation.timezone }}"
+    {%- endif %}
+  }
+  {%- endfor %}
+}

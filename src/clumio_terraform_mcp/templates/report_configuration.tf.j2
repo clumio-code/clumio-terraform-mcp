@@ -1,0 +1,116 @@
+resource "clumio_report_configuration" "{{ config_name }}" {
+  {%- if clumio_provider_alias %}
+  provider = clumio.{{ clumio_provider_alias }}
+  {%- endif %}
+  name     = "{{ config_display_name }}"
+  notification {
+    email_list = [{% for email in email_list %}"{{ email }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+  }
+  parameter {
+    controls {
+      {%- if controls.asset_backup %}
+      asset_backup {
+        {%- if controls.asset_backup.look_back_period %}
+        look_back_period {
+          unit  = "{{ controls.asset_backup.look_back_period.unit }}"
+          value = {{ controls.asset_backup.look_back_period.value }}
+        }
+        {%- endif %}
+        {%- if controls.asset_backup.minimum_retention_duration %}
+        minimum_retention_duration {
+          unit  = "{{ controls.asset_backup.minimum_retention_duration.unit }}"
+          value = {{ controls.asset_backup.minimum_retention_duration.value }}
+        }
+        {%- endif %}
+        {%- if controls.asset_backup.window_size %}
+        window_size {
+          unit  = "{{ controls.asset_backup.window_size.unit }}"
+          value = {{ controls.asset_backup.window_size.value }}
+        }
+        {%- endif %}
+      }
+      {%- endif %}
+      {%- if controls.asset_protection %}
+      asset_protection {
+        should_ignore_deactivated_policy = {{ controls.asset_protection.should_ignore_deactivated_policy | lower }}
+      }
+      {%- endif %}
+      {%- if controls.policy %}
+      policy {
+        {%- if controls.policy.minimum_retention_duration %}
+        minimum_retention_duration {
+          unit  = "{{ controls.policy.minimum_retention_duration.unit }}"
+          value = {{ controls.policy.minimum_retention_duration.value }}
+        }
+        {%- endif %}
+        {%- if controls.policy.minimum_rpo_frequency %}
+        minimum_rpo_frequency {
+          unit  = "{{ controls.policy.minimum_rpo_frequency.unit }}"
+          value = {{ controls.policy.minimum_rpo_frequency.value }}
+        }
+        {%- endif %}
+      }
+      {%- endif %}
+    }
+    {%- if filters %}
+    filters {
+      {%- if filters.asset %}
+      asset {
+        {%- if filters.asset.groups %}
+        groups = [
+        {%- for group in filters.asset.groups %}
+          {
+            {%- if group.group_id %}
+            id = "{{ group.group_id }}"
+            {%- endif %}
+            {%- if group.region %}
+            region = "{{ group.region }}"
+            {%- endif %}
+            {%- if group.asset_type %}
+            type = "{{ group.asset_type }}"
+            {%- endif %}
+          }{% if not loop.last %},{% endif %}
+        {%- endfor %}
+        ]
+        {%- endif %}
+        {%- if filters.asset.tag_op_mode %}
+        tag_op_mode = "{{ filters.asset.tag_op_mode }}"
+        {%- endif %}
+        {%- if filters.asset.tags %}
+        {%- for tag in filters.asset.tags %}
+        tags {
+          key = "{{ tag.key }}"
+          value = "{{ tag.value }}"
+        }
+        {%- endfor %}
+        {%- endif %}
+      }
+      {%- endif %}
+      {%- if filters.common %}
+      common {
+        {%- if filters.common.asset_types %}
+        asset_types = [{% for asset_type in filters.common.asset_types %}"{{ asset_type }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+        {%- endif %}
+        {%- if filters.common.data_sources %}
+        data_sources = [{% for data_source in filters.common.data_sources %}"{{ data_source }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+        {%- endif %}
+        {%- if filters.common.organizational_units %}
+        organizational_units = [{% for ou in filters.common.organizational_units %}"{{ ou }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+        {%- endif %}
+      }
+      {%- endif %}
+    }
+    {%- endif %}
+  }
+  
+  schedule {
+    {%- if schedule.frequency == 'monthly' %}
+    day_of_month = {{ schedule.day_of_month }}
+    {%- elif schedule.frequency == 'weekly' %}
+    day_of_week  = "{{ schedule.day_of_week }}"
+    {%- endif %}
+    frequency    = "{{ schedule.frequency }}"
+    start_time   = "{{ schedule.start_time }}"
+    timezone     = "{{ schedule.timezone }}"
+  }
+}
