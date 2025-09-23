@@ -40,25 +40,11 @@ class TestClient(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, 'mocked_data')
         self.mock_client.call_tool.assert_called_with('generate_policy_rule', unittest.mock.ANY)
 
-    async def test_demo_complete_solution(self):
-        self.mock_client.call_tool.return_value = self.mock_result
-        with patch('builtins.open', unittest.mock.mock_open()):
-            result = await client.demo_complete_solution(self.mock_client)
-        self.assertEqual(result, 'mocked_data')
-        self.mock_client.call_tool.assert_called_with('generate_complete_backup_solution', unittest.mock.ANY)
-
     async def test_demo_report_configuration(self):
         self.mock_client.call_tool.return_value = self.mock_result
         result = await client.demo_report_configuration(self.mock_client)
         self.assertEqual(result, 'mocked_data')
         self.mock_client.call_tool.assert_called_with('generate_report_configuration', unittest.mock.ANY)
-
-    async def test_demo_validation(self):
-        self.mock_result.data = {'is_valid': True, 'errors': [], 'warnings': [], 'recommendations': []}
-        self.mock_client.call_tool.return_value = self.mock_result
-        result = await client.demo_validation(self.mock_client)
-        self.assertEqual(result, self.mock_result.data)
-        self.mock_client.call_tool.assert_called_with('validate_terraform_config', unittest.mock.ANY)
 
     async def test_demo_example_scenarios(self):
         self.mock_result.data = {'scenarios': [], 'integration_examples': {}}

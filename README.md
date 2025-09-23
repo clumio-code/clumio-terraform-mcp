@@ -15,7 +15,6 @@ This MCP server provides an AI-friendly interface to generate Terraform configur
 - Organizational units
 - User management
 - Backup compliance report configurations
-- Configuration validation
 
 ## Features
 
@@ -28,10 +27,8 @@ This MCP server provides an AI-friendly interface to generate Terraform configur
 5. **generate_organizational_unit** - Build hierarchical organizational structures
 6. **generate_policy_rule** - Apply policies to resources through rules
 7. **generate_user_assignment** - Manage user access and permissions
-8. **generate_complete_backup_solution** - Generate comprehensive backup configurations
-9. **generate_report_configuration** - Create compliance report configurations
-10. **validate_terraform_config** - Validate configurations for best practices
-11. **get_example_scenarios** - Access common use case examples
+8. **generate_report_configuration** - Create compliance report configurations
+9. **get_example_scenarios** - Access common use case examples
 
 ## Installation
 
