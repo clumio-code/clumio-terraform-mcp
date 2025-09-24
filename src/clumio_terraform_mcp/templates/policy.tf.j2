@@ -7,7 +7,7 @@ resource "clumio_policy" "{{ policy_name }}" {
   
   {%- for operation in operations %}
   operations {
-    action_setting = "{{ operation.action_setting }}"
+    action_setting = "{{ 'window' if operation.backup_window_tz else 'immediate' }}"
     type           = "{{ operation.type }}"
     {%- for sla in operation.slas %}
     slas {
@@ -21,10 +21,10 @@ resource "clumio_policy" "{{ policy_name }}" {
       }
     }
     {%- endfor %}
-    {%- if operation.advanced_settings %}
+    {%- set adv_setting = operation.generate_advanced_setting() %}
+    {%- if adv_setting %}
     advanced_settings {
-      {%- set adv_settings = operation.advanced_settings.generate_advanced_settings() %}
-      {%- for setting_type, setting_values in adv_settings.items() %}
+      {%- for setting_type, setting_values in adv_setting.items() %}
       {{ setting_type }} {
         {%- for key, value in setting_values.items() %}
         {%- if value is string %}

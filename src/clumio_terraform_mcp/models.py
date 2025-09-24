@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 from typing import Literal
 
 CommonFilterAssetTypes = Literal[
@@ -26,187 +26,129 @@ PolicyOperationType = Literal[
 ]
 
 class ClumioAccount(BaseModel):
-    """Model for Clumio provider configuration."""
-    alias: str | None = Field(default=None, description="The alias for the Clumio provider. This is used to reference the provider in Terraform.")
-    ou_name: str | None = Field(default=None, description="The name of the organizational unit resource for the Clumio account. If not specified, consider using the default organizational unit.")
+    """Clumio account to generate Clumio provider configurations."""
+    alias: str | None = Field(default=None, description="The alias for the Clumio provider. This is used to reference the provider in Terraform. If there is only one provider, not need to give this.")
+    ou_name: str | None = Field(default=None, description="The name of the organizational unit resource for the Clumio account. ")
 
 
 class AssumeRole(BaseModel):
-    """Model for AWS assume role for AWS provider configuration."""
+    """AWS assume role to set up credentials in AWS provider."""
     role_arn: str = Field(description="The ARN of the role to assume.")
     session_name: str | None = Field(default=None, description="The name of the session to create.")
     external_id: str | None = Field(default=None, description="An optional external ID to include in the assume role request.")
 
 
 class AWSAccount(BaseModel):
-    """Model for AWS provider configuration."""
+    """AWS account to generate AWS provider configuration."""
     alias: str | None = Field(default=None, description="The alias for the AWS provider. This is used to reference the provider in Terraform.")
-    region: str | None = Field(default=None, description="The AWS region for the account. If not provided, defaults to 'us-west-2'.")
+    region: str | None = Field(default=None, description="The AWS region for the account.", examples=["us-west-2", "ca-central-1"])
     profile: str | None = Field(default=None, description="The pre-configured AWS profile to use for authentication.")
-    assume_role: AssumeRole | None = Field(default=None, description="The assume role configuration for the AWS provider.")
+    assume_role: AssumeRole | None = None
 
 
 class TimeUnit(BaseModel):
-    """Model for time unit."""
+    """Time unit."""
     value: int
     unit: Literal['minutes', 'hours', 'days', 'weeks', 'months', 'years']
 
 
 class AssetBackupControl(BaseModel):
-    """Model for asset backup control parameters."""
-    look_back_period: TimeUnit
-    minimum_retention_duration: TimeUnit
-    window_size: TimeUnit
+    """Control evaluating whether assets have at least one backup within each window of the specified look back period, with retention meeting the minimum required duration."""
+    look_back_period: TimeUnit = Field(description="The duration prior to the compliance evaluation point to look back.")
+    minimum_retention_duration: TimeUnit = Field(description="The minimum required retention duration for a backup to be considered compliant.")
+    window_size: TimeUnit = Field(description="The size of each evaluation window within the look back period in which at least one compliant backup must exist.")
 
 
 class AssetProtectionControl(BaseModel):
-    """Model for asset protection control parameters."""
-    should_ignore_deactivated_policy: bool
+    """Control evaluating if all assets are protected with a policy or not."""
+    should_ignore_deactivated_policy: bool = False
 
 
 class PolicyControl(BaseModel):
-    """Model for policy control parameters."""
+    """Control evaluating if policies have a minimum backup retention and frequency."""
     minimum_retention_duration: TimeUnit
     minimum_rpo_frequency: TimeUnit
 
 
 class ComplianceControl(BaseModel):
-    """The set of controls supported in compliance report."""
+    """Compliance controls to evaluate policy or assets for compliance."""
     asset_backup: AssetBackupControl
     asset_protection: AssetProtectionControl
     policy: PolicyControl
 
 
 class Group(BaseModel):
-    """The group structure for asset filter."""
+    """The asset groups to be filtered."""
     group_id: str | None = None
-    region: str | None = Field(default=None, description="The region of asset group. For example, us-west-2. This is supported for AWS asset groups only")
+    region: str | None = Field(default=None, description="This is supported for AWS asset groups only.", examples=["us-west-2", "ca-central-1"])
     asset_type: Literal['aws'] = 'aws'
 
 
 class AssetFilter(BaseModel):
-    """The set of asset filter parameters for compliance report."""
-    groups: list[Group] = Field(default=[], description="The list of asset groups to be included in the report")
+    """The filter for asset. This will be applied to asset backup and asset protection controls."""
+    groups: list[Group] = []
     tag_op_mode: Literal['and', 'or', 'equal'] | None = Field(description="The tag filter operation to be applied for the given tags. This is supported for AWS assets only")
     tags: list[dict[str, str]] = Field(default=[], description="The asset tags to be filtered. This is supported for AWS assets only")
 
 
 class CommonFilter(BaseModel):
-    """The set of common filter parameters for compliance report."""
-    asset_types: list[CommonFilterAssetTypes] = Field(default=[], description="The asset types to be included in the report")
-    data_sources: list[Literal['aws']] = Field(default=['aws'], description="The data sources to be included in the report")
-    organizational_units: list[str] = Field(default=[], description="The organizational units to be included in the report")
+    """The filter for common controls. This will be applied to all controls."""
+    asset_types: list[CommonFilterAssetTypes] = []
+    data_sources: list[Literal['aws']] = ['aws']
+    organizational_units: list[str] = []
 
 
 class ComplianceFilter(BaseModel):
-    """The set of filter parameters for compliance report."""
+    """Compliance filters to apply."""
     asset: AssetFilter | None = None
     common: CommonFilter | None = None
 
 
 class Schedule(BaseModel):
-    """The schedule parameters for compliance report."""
-    day_of_month: int = 1
-    day_of_week: Literal['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] = 'monday'
+    """Schedule for the report."""
+    day_of_month: int = Field(default=1, ge=-1, le=28, description="Day of the month to run the report. This is required for the 'monthly' report frequency (1-28, -1 for last day)")
+    day_of_week: Literal['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] = Field(default='monday', description="Day of the week to run the report. This is required for the 'weekly' report frequency.")
     frequency: Literal['daily', 'weekly', 'monthly'] = 'daily'
     start_time: str = '00:00'
-    timezone: str = 'UTC'
+    timezone: str = Field(default='UTC', description="The timezone in which the report will be generated. This is in IANA format.")
 
 
 class SLA(BaseModel):
-    """The SLAs model for policy."""
+    """The service level agreement (SLA) for the policy operation."""
     retention_duration: TimeUnit
     rpo_frequency: TimeUnit
 
 
-class ProtectionGroupBackup(BaseModel):
-    """S3 protection group backup settings."""
-    backup_tier: Literal['standard', 'archive'] = 'standard'
-
-
-class ProtectionGroupContinuousBackup(BaseModel):
-    """S3 protection group continuous backup settings."""
-    disable_eventbridge_notification: bool = True
-
-
-class EBSVolumeBackupAS(BaseModel):
-    """Advanced Settings Configuration settings for EBS Backup."""
-    backup_tier: Literal['standard', 'lite'] = 'standard'
-
-
-class EC2InstanceBackupAS(BaseModel):
-    """Advanced Settings Configuration settings for EC2 Instance."""
-    backup_tier: Literal['standard', 'lite'] = 'standard'
-
-
-class RDSPitrBackupAS(BaseModel):
-    """Advanced Settings Configuration settings for RDS PITR Backup."""
-    apply: Literal['immediate', 'maintenance_window'] = 'immediate'
-
-
-class RdsBackupTier(BaseModel):
-    """Advanced Settings Configuration settings for RDS Instance."""
-    backup_tier: Literal['standard', 'archive'] = 'archive'
-
-
-class AdvancedSettings(BaseModel):
-    """Sub-Policy advanced settings."""
-    # S3 protection group backup
-    protection_group_backup: ProtectionGroupBackup | None = None
-    protection_group_continuous_backup: ProtectionGroupContinuousBackup | None = None
-    # EBS EC2 Backup
-    aws_ebs_volume_backup: EBSVolumeBackupAS | None = None
-    aws_ec2_instance_backup: EC2InstanceBackupAS | None = None
-    # RDS Granular Backup
-    aws_rds_resource_granular_backup: RdsBackupTier | None = None
-    # RDS Pitr Backup
-    aws_rds_config_sync: RDSPitrBackupAS | None = None
-
-    def generate_advanced_settings(self):
-        """Return a nested dictionary of advanced settings."""
-        settings = {}
-        if self.protection_group_backup:
-            settings["protection_group_backup"] = {
-                "backup_tier": self.protection_group_backup.backup_tier
-            }
-        if self.protection_group_continuous_backup:
-            settings["protection_group_continuous_backup"] = {
-                "disable_eventbridge_notification": self.protection_group_continuous_backup.disable_eventbridge_notification
-            }
-        if self.aws_ebs_volume_backup:
-            settings["aws_ebs_volume_backup"] = {
-                "backup_tier": self.aws_ebs_volume_backup.backup_tier
-            }
-        if self.aws_ec2_instance_backup:
-            settings["aws_ec2_instance_backup"] = {
-                "backup_tier": self.aws_ec2_instance_backup.backup_tier
-            }
-        if self.aws_rds_resource_granular_backup:
-            settings["aws_rds_resource_granular_backup"] = {
-                "backup_tier": self.aws_rds_resource_granular_backup.backup_tier
-            }
-        if self.aws_rds_config_sync:
-            settings["aws_rds_config_sync"] = {
-                "apply": self.aws_rds_config_sync.apply
-            }
-        return settings
-
-
 class BackupWindow(BaseModel):
-    """Backup window model."""
-    end_time: str = '08:00'  # 8:00 AM (use empty string for no end time)
+    """The start and end times for the customized backup window that reflects the user-defined timezone."""
+    end_time: str = '08:00'  # 8:00 AM
     start_time: str = '20:00'  # 8:00 PM
 
 
 class Operation(BaseModel):
     """The operation model for policy."""
-    type: PolicyOperationType
-    action_setting: Literal['immediate', 'window'] = 'immediate'
+    type: PolicyOperationType = Field(description="The type of operation to be performed. Depending on the type selected, advanced_settings may also be required.")
     slas: list[SLA]
-    advanced_settings: AdvancedSettings | None = None
-    backup_aws_region: str | None = None
+    backup_aws_region: str | None = Field(default=None, description="The region in which this backup is stored. It defaults to in-region.", examples=["us-west-2", "ca-central-1"])
     backup_window_tz: BackupWindow | None = None
-    timezone: str | None = None
+    timezone: str | None = Field(default=None, description="The timezone in which the backup window is defined. This should be in IANA format.")
+
+    def generate_advanced_setting(self):
+        """Return a nested dictionary of advanced setting."""
+        settings = {}
+        if self.type == 'protection_group_backup':
+            settings["protection_group_backup"] = {"backup_tier": "standard"}
+        if self.type == 'protection_group_continuous_backup':
+            settings["protection_group_continuous_backup"] = {"disable_eventbridge_notification": True}
+        if self.type == 'aws_ebs_volume_backup':
+            settings["aws_ebs_volume_backup"] = {"backup_tier": "standard"}
+        if self.type == 'aws_ec2_instance_backup':
+            settings["aws_ec2_instance_backup"] = {"backup_tier": "standard"}
+        if self.type == 'aws_rds_resource_granular_backup':
+            settings["aws_rds_resource_granular_backup"] = {"backup_tier": "standard"}
+        if self.type == 'aws_rds_config_sync':
+            settings["aws_rds_config_sync"] = {"apply": "immediate"}
+        return settings
 
 
 class AccessControlConfiguration(BaseModel):

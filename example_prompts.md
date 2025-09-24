@@ -25,7 +25,7 @@ Generate a Clumio protection policy for critical EBS volumes with:
 
 ### Tiered Protection Policies
 ```
-Generate three protection policies for different data tiers:
+Generate three protection policies for different SLAs:
 1. Critical: 1-hour RPO, 90-day retention
 2. Standard: 24-hour RPO, 30-day retention  
 3. Archive: Weekly backups, 1-year retention

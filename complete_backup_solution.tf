@@ -1,4 +1,3 @@
-# Providers
 terraform {
   required_providers {
     clumio = {
@@ -34,7 +33,6 @@ variable "aws_region" {
   default     = "us-west-2"
 }
 
-# AWS Account Connections
 data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
@@ -64,8 +62,6 @@ module "clumio_aws_resources" {
   is_dynamodb_enabled   = true
 }
 
-
-# Policies
 resource "clumio_policy" "unified_policy" {
   name              = "Unified Policy"
   activation_status = "activated"
@@ -166,8 +162,6 @@ resource "clumio_policy" "unified_policy" {
   }
 }
 
-
-# Protection Groups
 resource "clumio_protection_group" "s3_protection_group" {
   name           = "S3 Protection Group"
   description    = "Protection Group for S3 buckets tagged with backup:true"
@@ -192,7 +186,6 @@ resource "clumio_policy_assignment" "s3_protection_group_assignment" {
   policy_id   = clumio_policy.unified_policy.id
 }
 
-# Policy Rules
 resource "clumio_policy_rule" "unified_protection_rule" {
   policy_id           = clumio_policy.unified_policy.id
   name                = "Unified Protection Rule"
@@ -217,4 +210,3 @@ resource "clumio_policy_rule" "unified_protection_rule" {
     }
   )
 }
-

@@ -35,7 +35,6 @@ async def demo_policy(client):
         "display_name": "Standard EBS Volume Protection",
         "operations": [{
             "type": "aws_ebs_volume_backup",
-            "action_setting": "window",
             "slas": [{
                 "retention_duration": {
                     "unit": "days",
@@ -46,11 +45,6 @@ async def demo_policy(client):
                     "value": 1
                 }
             }],
-            "advanced_settings": {
-                "aws_ebs_volume_backup": {
-                    "backup_tier": "standard"
-                }
-            },
             "backup_aws_region": "us-west-2",
             "backup_window_tz": {
                 "start_time": "02:00",
@@ -158,33 +152,20 @@ async def demo_complete_solution(client):
                 "operations": [
                     {
                         "type": "aws_ec2_instance_backup",
-                        "action_setting": "immediate",
                         "slas": [{
                             "retention_duration": {"unit": "days", "value": 30},
                             "rpo_frequency": {"unit": "days", "value": 1}
-                        }],
-                        "advanced_settings": {
-                            "aws_ec2_instance_backup": {
-                                "backup_tier": "standard"
-                            }
-                        }
+                        }]
                     },
                     {
                         "type": "aws_ebs_volume_backup",
-                        "action_setting": "immediate",
                         "slas": [{
                             "retention_duration": {"unit": "days", "value": 30},
                             "rpo_frequency": {"unit": "days", "value": 1}
-                        }],
-                        "advanced_settings": {
-                            "aws_ebs_volume_backup": {
-                                "backup_tier": "standard"
-                            }
-                        }
+                        }]
                     },
                     {
                         "type": "aws_dynamodb_table_backup",
-                        "action_setting": "immediate",
                         "slas": [
                             {
                                 "retention_duration": {"unit": "days", "value": 30},
@@ -198,7 +179,6 @@ async def demo_complete_solution(client):
                     },
                     {
                         "type": "aws_rds_resource_rolling_backup",
-                        "action_setting": "immediate",
                         "slas": [
                             {
                                 "retention_duration": {"unit": "days", "value": 7},
@@ -208,16 +188,10 @@ async def demo_complete_solution(client):
                     },
                     {
                         "type": "protection_group_backup",
-                        "action_setting": "immediate",
                         "slas": [{
                             "retention_duration": {"unit": "months", "value": 3},
                             "rpo_frequency": {"unit": "days", "value": 1}
-                        }],
-                        "advanced_settings": {
-                            "protection_group_backup": {
-                                "backup_tier": "standard"
-                            }
-                        }
+                        }]
                     },
                 ]
             },
@@ -257,18 +231,28 @@ async def demo_complete_solution(client):
             }
         ]
     }
-    
-    result = await client.call_tool("generate_complete_backup_solution", {
-        "config": config
-    })
-    
+    results = []
+    results.append(await client.call_tool("generate_providers", {
+        "clumio_accounts": [{}],
+        "aws_accounts": [],
+    }))
+    results.append(await client.call_tool("generate_aws_connection", config["aws_connections"][0]))
+    for policy in config["policies"]:
+        results.append(await client.call_tool("generate_policy", policy))
+    for pg in config["protection_groups"]:
+        results.append(await client.call_tool("generate_protection_group", pg))
+    for pr in config["policy_rules"]:
+        results.append(await client.call_tool("generate_policy_rule", pr))
+
+    result = '\n\n'.join(r.data for r in results)
+
     # Save to file
     with open("complete_backup_solution.tf", "w") as f:
-        f.write(result.data)
-    
+        f.write(result)
+
     print(f"Complete solution saved to complete_backup_solution.tf")
-    print(f"Configuration size: {len(result.data)} characters")
-    return result.data
+    print(f"Configuration size: {len(result)} characters")
+    return result
 
 async def demo_report_configuration(client):
     """Demo: Generate Report Configuration"""
@@ -315,55 +299,6 @@ async def demo_report_configuration(client):
     print(result.data)
     return result.data
 
-async def demo_validation(client):
-    """Demo: Validate Terraform Configuration"""
-    print("\n=== Configuration Validation ===")
-    
-    # Sample configuration with intentional issues
-    sample_config = """
-terraform {
-  required_providers {
-    clumio = {
-      source = "clumio-code/clumio"
-    }
-  }
-}
-
-provider "clumio" {
-  clumio_api_token = "hardcoded-token-123"  # Bad practice!
-  clumio_api_base_url = var.clumio_api_base_url
-}
-
-resource "clumio_aws_connection" "test" {
-  account_native_id = "123456789012"
-  aws_region = "us-east-1"
-}
-"""
-    
-    result = await client.call_tool("validate_terraform_config", {
-        "config_content": sample_config
-    })
-    
-    validation = result.data
-    print(f"Valid: {validation['is_valid']}")
-    
-    if validation['errors']:
-        print("\nErrors:")
-        for error in validation['errors']:
-            print(f"  ❌ {error}")
-    
-    if validation['warnings']:
-        print("\nWarnings:")
-        for warning in validation['warnings']:
-            print(f"  ⚠️  {warning}")
-    
-    if validation['recommendations']:
-        print("\nRecommendations:")
-        for rec in validation['recommendations']:
-            print(f"  💡 {rec}")
-    
-    return validation
-
 async def demo_example_scenarios(client):
     """Demo: Get Example Scenarios"""
     print("\n=== Example Usage Scenarios ===")
@@ -396,8 +331,7 @@ async def interactive_menu(client):
         "5": ("Policy Rule", demo_policy_rule),
         "6": ("Complete Backup Solution", demo_complete_solution),
         "7": ("Report Configuration", demo_report_configuration),
-        "8": ("Configuration Validation", demo_validation),
-        "9": ("Example Scenarios", demo_example_scenarios),
+        "8": ("Example Scenarios", demo_example_scenarios),
         "0": ("Run All Demos", None)
     }
     
@@ -445,7 +379,6 @@ async def main():
                 await demo_policy_rule(client)
                 await demo_complete_solution(client)
                 await demo_report_configuration(client)
-                await demo_validation(client)
                 await demo_example_scenarios(client)
         elif sys.argv[1] == "--help":
             print("Usage: python src/clumio_terraform_mcp/client.py [OPTIONS]")
