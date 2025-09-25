@@ -299,28 +299,6 @@ async def demo_report_configuration(client):
     print(result.data)
     return result.data
 
-async def demo_example_scenarios(client):
-    """Demo: Get Example Scenarios"""
-    print("\n=== Example Usage Scenarios ===")
-    
-    result = await client.call_tool("get_example_scenarios", {})
-    
-    scenarios = result.data
-    
-    print("\nAvailable Scenarios:")
-    for i, scenario in enumerate(scenarios['scenarios'], 1):
-        print(f"\n{i}. {scenario['name']}")
-        print(f"   Description: {scenario['description']}")
-        print(f"   Use Case: {scenario['use_case']}")
-        print(f"   Example: {scenario['example_prompt']}")
-    
-    print("\n\nIntegration Examples:")
-    for integration, example in scenarios['integration_examples'].items():
-        print(f"\n{integration}:")
-        print(f"  {example}")
-    
-    return scenarios
-
 async def interactive_menu(client):
     """Interactive menu for demonstrations"""
     demos = {
@@ -331,7 +309,6 @@ async def interactive_menu(client):
         "5": ("Policy Rule", demo_policy_rule),
         "6": ("Complete Backup Solution", demo_complete_solution),
         "7": ("Report Configuration", demo_report_configuration),
-        "8": ("Example Scenarios", demo_example_scenarios),
         "0": ("Run All Demos", None)
     }
     
@@ -379,7 +356,6 @@ async def main():
                 await demo_policy_rule(client)
                 await demo_complete_solution(client)
                 await demo_report_configuration(client)
-                await demo_example_scenarios(client)
         elif sys.argv[1] == "--help":
             print("Usage: python src/clumio_terraform_mcp/client.py [OPTIONS]")
             print("\nOptions:")

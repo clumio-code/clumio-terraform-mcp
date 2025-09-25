@@ -235,49 +235,5 @@ def generate_report_configuration(
         schedule=schedule
     ).strip()
 
-# Example usage scenarios
-@mcp.tool
-def get_example_scenarios() -> dict[str, Any]:
-    """Get example scenarios for using the Clumio Terraform MCP server."""
-    return {
-        "scenarios": [
-            {
-                "name": "Multi-Account Enterprise Setup",
-                "description": "Configure Clumio for multiple AWS accounts with different protection requirements",
-                "use_case": "Large enterprise with production, staging, and development accounts",
-                "example_prompt": "Generate a Terraform configuration for 3 AWS accounts (prod, staging, dev) with different retention policies"
-            },
-            {
-                "name": "Compliance-Driven Backup",
-                "description": "Set up backup policies to meet regulatory compliance (HIPAA, SOC2, etc.)",
-                "use_case": "Healthcare or financial services requiring specific retention and RPO",
-                "example_prompt": "Create HIPAA-compliant backup policies with 7-year retention for databases"
-            },
-            {
-                "name": "Tag-Based Protection",
-                "description": "Automatically protect resources based on tags",
-                "use_case": "Dynamic environments where resources are tagged by department or criticality",
-                "example_prompt": "Generate protection groups for all resources tagged with Environment=Production"
-            },
-            {
-                "name": "Disaster Recovery Setup",
-                "description": "Configure cross-region backup replication",
-                "use_case": "Business continuity planning with geographic redundancy",
-                "example_prompt": "Set up EBS and RDS backups with replication to a DR region"
-            },
-            {
-                "name": "Cost-Optimized Backup",
-                "description": "Tiered protection based on resource importance",
-                "use_case": "Cost-conscious organizations with varying data criticality",
-                "example_prompt": "Create tiered backup policies: critical (1hr RPO), standard (24hr RPO), archive (weekly)"
-            }
-        ],
-        "integration_examples": {
-            "with_claude": "Ask Claude to 'Generate a Clumio backup configuration for my production AWS account with hourly EBS snapshots'",
-            "with_automation": "Use in CI/CD pipelines to automatically configure backup for new AWS accounts",
-            "with_chatops": "Integrate with Slack/Teams bots for on-demand backup policy creation"
-        }
-    }
-
 if __name__ == "__main__":
     mcp.run()

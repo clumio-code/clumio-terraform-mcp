@@ -46,12 +46,5 @@ class TestClient(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, 'mocked_data')
         self.mock_client.call_tool.assert_called_with('generate_report_configuration', unittest.mock.ANY)
 
-    async def test_demo_example_scenarios(self):
-        self.mock_result.data = {'scenarios': [], 'integration_examples': {}}
-        self.mock_client.call_tool.return_value = self.mock_result
-        result = await client.demo_example_scenarios(self.mock_client)
-        self.assertEqual(result, self.mock_result.data)
-        self.mock_client.call_tool.assert_called_with('get_example_scenarios', {})
-
 if __name__ == '__main__':
     unittest.main()

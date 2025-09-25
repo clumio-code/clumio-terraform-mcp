@@ -138,7 +138,7 @@ class Operation(BaseModel):
         settings = {}
         if self.type == 'protection_group_backup':
             settings["protection_group_backup"] = {"backup_tier": "standard"}
-        if self.type == 'protection_group_continuous_backup':
+        if self.type == 'aws_s3_continuous_backup':
             settings["protection_group_continuous_backup"] = {"disable_eventbridge_notification": True}
         if self.type == 'aws_ebs_volume_backup':
             settings["aws_ebs_volume_backup"] = {"backup_tier": "standard"}
