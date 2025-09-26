@@ -92,42 +92,6 @@ Ask your AI assistant to use the Clumio Terraform MCP server:
 - Tag-based protection for resources tagged Environment:Production"
 ```
 
-## Best Practices
-
-1. **Use Variables for Sensitive Data**: Never hardcode API tokens or credentials
-2. **Implement Hierarchical OUs**: Organize resources using organizational units
-3. **Tag Resources Consistently**: Use standardized tags for automatic protection
-4. **Set Appropriate Retention**: Balance compliance requirements with storage costs
-5. **Configure Backup Windows**: Schedule backups during low-usage periods
-6. **Validate Configurations**: Use the validation tool before applying changes
-
-## API Reference
-
-### Tool Parameters
-
-Each tool accepts specific parameters. Here are the key ones:
-
-#### generate_aws_connection
-- `connection_name`: Name for the connection resource
-- `description`: Description of the AWS account connection
-- `services`: Dictionary of services to enable (ebs, rds, s3, dynamodb)
-- `aws_provider_alias`: Alias name for AWS provider
-- `wait_for_data_plane_resources`: Flag to indicate wait for data plane resources to be created
-- `wait_for_ingestion`: Flag to indicate wait for ingestion to complete
-
-#### generate_policy
-- `policy_name`: Resource name for the policy
-- `display_name`: Human-readable name
-- `operations`: List of operation types and settings for policy
-
-#### generate_protection_group
-- `group_name`: Resource name for the group
-- `display_name`: Human-readable name
-- `policy_name`: Reference to the policy resource
-- `description`: Description of the protection group
-- `bucket_rule`: Configuration for bucket rule. Each rule is constructed with field, rule condition, and value. e.g., {"aws_tag": {"$eq": {"key": "Environment", "value": "Production"}}}
-- `storage_classes`: List of storage classes to include
-
 ## Example Prompts for AI Assistants
 
 Check out [example_prompts.md](example_prompts.md) for comprehensive examples of how to use this MCP server with AI assistants like Claude or ChatGPT.
@@ -136,4 +100,3 @@ Check out [example_prompts.md](example_prompts.md) for comprehensive examples of
 
 - Clumio Documentation: https://documentation.commvault.com/clumio/index.html
 - Terraform Provider Docs: https://registry.terraform.io/providers/clumio-code/clumio/latest
-- GitHub Issues: https://github.com/clumio/clumio-terraform-mcp/issues
